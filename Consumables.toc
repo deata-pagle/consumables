@@ -1,0 +1,6 @@
+## Interface: 11303
+## Title: Consumables
+## Author: Deata@Pagle (deata.pagle@gmail.com)
+## Version: 0.0.1
+
+Consumables.xml
