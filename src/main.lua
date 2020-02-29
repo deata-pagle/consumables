@@ -1,7 +1,7 @@
 SLASH_CONSUMABLES1 = "/consumables";
 
-local function GetRaidersWithoutConsumables(msg, editbox)
-    local playersWithoutConsumables = {};
+local function GetRaidersWithConsumables(msg, editbox)
+    local playersWithConsumables = {};
     local unitBase = IsInRaid() and "raid" or "party";
 
     for i = 1, GetNumGroupMembers() do
@@ -35,23 +35,23 @@ local function GetRaidersWithoutConsumables(msg, editbox)
             end
         end
 
-        if not hasConsumable then
+        if hasConsumable then
             local playerName = UnitName(unitID);
-            table.insert(playersWithoutConsumables, playerName);
+            table.insert(playersWithConsumables, playerName);
         end
 
     end
 
-    local playersWithoutConsumablesStr = ""
-    for i, playerName in pairs(playersWithoutConsumables) do
-        playersWithoutConsumablesStr = playersWithoutConsumablesStr .. playerName;
+    local playersWithConsumablesStr = ""
+    for i, playerName in pairs(playersWithConsumables) do
+        playersWithConsumablesStr = playersWithConsumablesStr .. playerName;
 
-        if table.getn(playersWithoutConsumables) ~= i then
-            playersWithoutConsumablesStr = playersWithoutConsumablesStr .. ", ";
+        if table.getn(playersWithConsumables) ~= i then
+            playersWithConsumablesStr = playersWithConsumablesStr .. ", ";
         end
     end
 
-    print("Players without consumables: " .. playersWithoutConsumablesStr);
+    print("Players with consumables: " .. playersWithConsumablesStr);
 end
 
-SlashCmdList["CONSUMABLES"] = GetRaidersWithoutConsumables;
+SlashCmdList["CONSUMABLES"] = GetRaidersWithConsumables;
