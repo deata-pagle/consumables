@@ -3,19 +3,15 @@
 local function tableDifference(t1, t2)
     local hasValue = {};
 
-    for _,v in pairs(t2) do
-        hasValue[v] = true;
-    end
-
-    for k,v in pairs(t1) do 
-        if hasValue[v] ~= nil then
-            table.remove(t1, k);
+    for k,v in pairs(t1) do
+        if t2[k] ~= nil then
+            t1[k] = nil;
         end
     end
 end
 
 -- The "with" argument decides whether we return players with or without consumables
-local function GetRaidersConsumables(msg, editbox, with)
+local function GetRaidersConsumables(msg, editbox, with, verbose)
     local players = {};
     local playersWithConsumables = {};
     local unitBase = IsInRaid() and "raid" or "party";
@@ -30,7 +26,9 @@ local function GetRaidersConsumables(msg, editbox, with)
             class = select(2, UnitClass(unitID));
         end
 
-        local hasConsumable = false;
+        -- Add player name to list
+        local playerName = UnitName(unitID);
+        players[playerName] = {};
 
         for i=1, 40 do
             local buffID = select(10, UnitBuff(unitID, i));
@@ -39,23 +37,19 @@ local function GetRaidersConsumables(msg, editbox, with)
                 break;
             end
 
-            for _, rewardBuffID in pairs(CONSUMABLES_BY_CLASSES[class]) do
-                if buffID == rewardBuffID then
-                    hasConsumable = true;
+            for _, consumable in pairs(CONSUMABLES_BY_CLASSES[class]) do
+                consumableBuffID = consumable["buffID"];
+                consumableItemID = consumable["itemID"];
+
+                if buffID == consumableBuffID then
+                    if playersWithConsumables[playerName] == nil then
+                        playersWithConsumables[playerName] = {consumableItemID};
+                    else
+                        table.insert(playersWithConsumables[playerName], consumableItemID);
+                    end
                 end
             end
-
-            if hasConsumable then
-                break;
-            end
         end
-
-        local playerName = UnitName(unitID);
-        if hasConsumable then
-            table.insert(playersWithConsumables, playerName);
-        end
-
-        table.insert(players, playerName);
     end
 
     -- Chooses the proper wording for each use-case
@@ -72,25 +66,56 @@ local function GetRaidersConsumables(msg, editbox, with)
     end
 
     -- Sort the output for Zeebub
-    table.sort(playersOutput)
-
-    local playersConsumablesStr = ""
-    for i, playerName in pairs(playersOutput) do
-        playersConsumablesStr = playersConsumablesStr .. playerName;
-
-        if table.getn(playersOutput) ~= i then
-            playersConsumablesStr = playersConsumablesStr .. ", ";
-        end
+    local sortedKeys = {};
+    for key in pairs(playersOutput) do
+        table.insert(sortedKeys, key);
     end
+    table.sort(sortedKeys);
 
-    print("Players " .. operand .. " consumables: " .. playersConsumablesStr);
+    local playersConsumablesStr = "";
+
+    -- Print full consumables details
+    if verbose then
+        print("Player consumable details:");
+
+        for _, playerName in pairs(sortedKeys) do
+            local consumables = playersOutput[playerName];
+
+            for i, itemID in pairs(consumables) do
+                local itemLink = select(2, GetItemInfo(itemID));
+                local itemIcon = select(10, GetItemInfo(itemID));
+                playersConsumablesStr = playersConsumablesStr .. "|T" .. itemIcon .. ":0|t" .. itemLink;
+
+                if table.getn(consumables) ~= i then
+                    playersConsumablesStr = playersConsumablesStr .. ", ";
+                end
+            end
+
+            print("|cff00FF00" .. playerName .. "|r: " .. playersConsumablesStr);
+        end
+    -- Print names only
+    else
+        playersConsumablesStr = "Players " .. operand .. " consumables: ";
+
+        for i, playerName in pairs(sortedKeys) do
+            playersConsumablesStr = playersConsumablesStr .. playerName;
+
+            if table.getn(sortedKeys) ~= i then
+                playersConsumablesStr = playersConsumablesStr .. ", ";
+            end
+        end
+
+        print(playersConsumablesStr);
+    end
 end
 
 local function SlashCmdHandler(msg, editbox)
     if msg == "none" or msg == "no" then
-        GetRaidersConsumables(msg, editbox, false);
+        GetRaidersConsumables(msg, editbox, false, false);
+    elseif msg == "verbose" or msg == "v" then
+        GetRaidersConsumables(msg, editbox, true, true);
     else
-        GetRaidersConsumables(msg, editbox, true);
+        GetRaidersConsumables(msg, editbox, true, false);
     end
 end
 
